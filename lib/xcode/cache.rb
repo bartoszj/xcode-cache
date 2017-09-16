@@ -7,7 +7,7 @@ module XcodeCache
   class Curl
     COOKIES_PATH = Pathname.new('/tmp/xcode-links-cookies.txt')
 
-    def fetch(url, output: "/dev/null", cookie: nil, retries: 3, curl_retries: 3)
+    def fetch(url, output: "/dev/null", cookie: nil, retries: 5, curl_retries: 3)
       # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L
       # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L --progress-bar
       # File.open(COOKIES_PATH, "w") { |file| file.write(spaceship.cookie) }
@@ -25,6 +25,7 @@ module XcodeCache
         "--cookie-jar", COOKIES_PATH,
         "--output", output,
         "--progress-bar",
+        # "--verbose",
         url
       ].map(&:to_s)
 
@@ -98,7 +99,7 @@ HELP
       grouped = xcodes.group_by { |x| x.version.to_s.split('.').push('0').slice(0..GROUP_VERSION_SEGMENTS-1).join('.') }
       @newest = grouped.map do |k ,v|
         v.max(NEWSET_VERSION_COUNT) { |a, b| a.version <=> b.version }
-      end.flatten
+      end.flatten.sort { |a, b| a.version <=> b.version }
 
       @newest
     end
@@ -183,7 +184,7 @@ HELP
       else
         @name = json
         @path = url.split('/').last
-        url_prefix = 'https://developer.apple.com/'
+        url_prefix = 'https://developer.apple.com'
         @url = "#{url_prefix}#{url}"
         @release_notes_url = "#{url_prefix}#{release_notes_url}"
       end
