@@ -3,9 +3,49 @@ require 'spaceship'
 require 'fileutils'
 
 module XcodeCache
-  class Fetcher
-    MINIMUM_VERSION = Gem::Version.new('7.0')
+
+  class Curl
     COOKIES_PATH = Pathname.new('/tmp/xcode-links-cookies.txt')
+
+    def fetch(url, output: "/dev/null", cookie: nil, retries: 3, curl_retries: 3)
+      # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L
+      # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L --progress-bar
+      # File.open(COOKIES_PATH, "w") { |file| file.write(spaceship.cookie) }
+
+      options = [
+        "--location",
+      ]
+      retry_options = ['--retry', "#{retries}"]
+      command = [
+        "curl",
+        *options,
+        *retry_options,
+        '--continue-at', '-',
+        "--cookie", cookie,
+        "--cookie-jar", COOKIES_PATH,
+        "--output", output,
+        "--progress-bar",
+        url
+      ].map(&:to_s)
+
+      # Run the curl command in a loop, retry when curl exit status is 18
+      # "Partial file. Only a part of the file was transferred."
+      # https://curl.haxx.se/mail/archive-2008-07/0098.html
+      curl_retries.times do
+        io = IO.popen(command)
+        io.each { |line| puts line }
+        io.close
+
+        exit_code = $?.exitstatus
+        return exit_code.zero? unless exit_code == 18
+      end
+    ensure
+      FileUtils.rm_f(COOKIES_PATH)
+    end
+  end
+
+  class Cacher
+    MINIMUM_VERSION = Gem::Version.new('7.0')
 
     attr_reader :xcodes
     attr_reader :newest
@@ -61,41 +101,15 @@ HELP
       @newest
     end
 
-    def xcode_urls
-      newest.map { |x| x.url }
-    end
+    # def xcode_urls
+    #   newest.map { |x| x.url }
+    # end
 
     def fetch_xcodes
       newest.each do |xcode|
         puts "Xcode #{xcode.version}"
-        File.open(COOKIES_PATH, "w") { |file| file.write(spaceship.cookie) }
-
-        # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L
-        # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L --progress-bar
-        # command = [
-        #   "curl",
-        #   "--location",
-        #   "--cookie",
-        #   spaceship.cookie,
-        #   "--cookie-jar",
-        #   COOKIES_PATH,
-        #   "--output",
-        #   "/dev/null",
-        #   "--progress-bar",
-        #   xcode.url
-        # ].map(&:to_s)
-
-        # 3.times do
-        #   io = IO.popen(command)
-        #   io.each { |line| puts line }
-        #   io.close
-
-        #   exit_code = $?.exitstatus
-        #   return exit_code.zero? unless exit_code == 18
-        # end
+        Curl.new.fetch(xcode.url, cookie: spaceship.cookie)
       end
-    ensure
-      # FileUtils.rm_f(COOKIES_PATH)
     end
 
     def prereleases
@@ -175,7 +189,7 @@ HELP
       begin
         @version = Gem::Version.new(@name.split(' ')[0])
       rescue
-        @version = Fetcher::MINIMUM_VERSION
+        @version = Cacher::MINIMUM_VERSION
       end
     end
 
@@ -196,7 +210,7 @@ HELP
   end
 end
 
-f = XcodeCache::Fetcher.new
+f = XcodeCache::Cacher.new
 # f.xcodes
 # f.newest
 # puts f.xcode_urls

@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["bartosz.janda@gmail.com"]
 
   spec.summary       = %q{Fetch Xcode and simulators}
-  spec.description   = %q{Fetch Xcode and simulators}
+  spec.description   = %q{Fetch Xcode and simulators. Perfect for populating your HTTP(S) cache server.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
