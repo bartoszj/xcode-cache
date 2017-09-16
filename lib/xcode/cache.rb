@@ -61,20 +61,20 @@ module XcodeCache
     def spaceship
       @spaceship ||= begin
         begin
-          Spaceship.login(ENV['XCODE_LINKS_USER'], ENV['XCODE_LINKS_PASSWORD'])
+          Spaceship.login(ENV['XCODE_CACHE_USER'], ENV['XCODE_CACHE_PASSWORD'])
         rescue Spaceship::Client::InvalidUserCredentialsError
           $stderr.puts 'The specified Apple developer account credentials are incorrect.'
           exit(1)
         rescue Spaceship::Client::NoUserCredentialsError
           $stderr.puts <<-HELP
 Please provide your Apple developer account credentials via the
-XCODE_LINKS_USER and XCODE_LINKS_PASSWORD environment variables.
+XCODE_CACHE_USER and XCODE_CACHE_PASSWORD environment variables.
 HELP
           exit(1)
         end
 
-        if ENV.key?('XCODE_LINKS_TEAM_ID')
-          Spaceship.client.team_id = ENV['XCODE_LINKS_TEAM_ID']
+        if ENV.key?('XCODE_CACHE_TEAM_ID')
+          Spaceship.client.team_id = ENV['XCODE_CACHE_TEAM_ID']
         end
         Spaceship.client
       end
