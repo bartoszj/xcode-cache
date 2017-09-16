@@ -46,6 +46,8 @@ module XcodeCache
 
   class Cacher
     MINIMUM_VERSION = Gem::Version.new('7.0')
+    GROUP_VERSION_SEGMENTS = 2
+    NEWSET_VERSION_COUNT = 2
 
     attr_reader :xcodes
     attr_reader :newest
@@ -93,17 +95,17 @@ HELP
     def newest_seedlist
       xcodes = self.xcodes
 
-      grouped = xcodes.group_by { |x| x.version.to_s.split('.', 3).push('0').slice(0..1).join('.') }
+      grouped = xcodes.group_by { |x| x.version.to_s.split('.').push('0').slice(0..GROUP_VERSION_SEGMENTS-1).join('.') }
       @newest = grouped.map do |k ,v|
-        v.max { |a, b| a.version <=> b.version }
-      end
+        v.max(NEWSET_VERSION_COUNT) { |a, b| a.version <=> b.version }
+      end.flatten
 
       @newest
     end
 
-    # def xcode_urls
-    #   newest.map { |x| x.url }
-    # end
+    def xcode_urls
+      newest.map { |x| x.url }
+    end
 
     def fetch_xcodes
       newest.each do |xcode|
@@ -211,9 +213,7 @@ HELP
 end
 
 f = XcodeCache::Cacher.new
-# f.xcodes
-# f.newest
-# puts f.xcode_urls
+puts f.xcode_urls
 f.fetch_xcodes
 
 # require "pry"
