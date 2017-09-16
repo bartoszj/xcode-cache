@@ -79,45 +79,74 @@ HELP
     GROUP_VERSION_SEGMENTS = 2
     NEWSET_VERSION_COUNT = 2
 
-    attr_reader :xcodes
-    attr_reader :newest
     attr_reader :installer
+    attr_reader :xcodes
+    attr_reader :newest_xcodes
+    attr_reader :simulators
 
     def initialize
       @installer = Installer.new
     end
 
     def xcodes
-      @xcodes ||= installer.fetch_seedlist
+      @xcodes ||= filtered_xcodes
     end
 
-    def newest
-      @newest || newest_seedlist
+    def newest_xcodes
+      @newest_xcodes || newest_seedlist
     end
 
     def xcode_urls
-      newest.map { |x| x.url }
+      newest_xcodes.map { |x| x.url }
     end
 
     def fetch_xcodes
-      newest.each do |xcode|
+      newest_xcodes.each do |xcode|
         puts "Xcode #{xcode.version}"
         Curl.new.fetch(xcode.url, cookie: installer.spaceship.cookie)
       end
     end
 
+    def simulators
+      @simulators ||= get_simulators
+    end
+
+    def simulators_urls
+      simulators.map { |s| s.source }
+    end
+
+    def fetch_simulators
+      simulators.each do |simulator|
+        puts "#{simulator.name}"
+        Curl.new.fetch(simulator.source)
+      end
+    end
+
     private
+    def filtered_xcodes
+      installer.fetch_seedlist.select { |x| x.version >= MINIMUM_VERSION }.sort { |a, b| a.version <=> b.version }
+    end
+
     def newest_seedlist
       xcodes = self.xcodes
 
-      # Get Xcodes with minimum version
-      xcodes = xcodes.select { |x| x.version >= MINIMUM_VERSION }
+      # Group by a version numbers
       grouped = xcodes.group_by { |x| x.version.to_s.split('.').push('0').slice(0..GROUP_VERSION_SEGMENTS-1).join('.') }
-      @newest = grouped.map do |k ,v|
+
+      # Select only newset versions from a group
+      @newest_xcodes = grouped.map do |k ,v|
         v.max(NEWSET_VERSION_COUNT) { |a, b| a.version <=> b.version }
       end.flatten.sort { |a, b| a.version <=> b.version }
 
-      @newest
+      @newest_xcodes
+    end
+
+    def get_simulators
+      installer.installed_versions.map do |xcode|
+        xcode.available_simulators
+      end.flatten.uniq do |xcode|
+        xcode.source
+      end.sort { |a, b| a.version <=> b.version }
     end
   end
 end
@@ -126,7 +155,6 @@ f = XcodeCache::Cacher.new
 # puts f.xcode_urls
 f.fetch_xcodes
 
-# require "pry"
-# binding.pry
+# puts f.simulators_urls
+f.fetch_simulators
 
-puts "aaa"
