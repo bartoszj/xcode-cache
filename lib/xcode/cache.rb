@@ -124,7 +124,7 @@ HELP
 
     private
     def filtered_xcodes
-      installer.fetch_seedlist.select { |x| x.version >= MINIMUM_VERSION }.sort { |a, b| a.version <=> b.version }
+      installer.fetch_seedlist.select { |x| x.version >= MINIMUM_VERSION }.sort { |a, b| b.version <=> a.version }
     end
 
     def newest_seedlist
@@ -136,7 +136,7 @@ HELP
       # Select only newset versions from a group
       @newest_xcodes = grouped.map do |k ,v|
         v.max(NEWSET_VERSION_COUNT) { |a, b| a.version <=> b.version }
-      end.flatten.sort { |a, b| a.version <=> b.version }
+      end.flatten.sort { |a, b| b.version <=> a.version }
 
       @newest_xcodes
     end
@@ -146,7 +146,7 @@ HELP
         xcode.available_simulators
       end.flatten.uniq do |xcode|
         xcode.source
-      end.sort { |a, b| a.name <=> b.name }
+      end.sort { |a, b| [a.name.split(' ')[0], b.version] <=> [b.name.split(' ')[0], a.version] }
     end
   end
 end
