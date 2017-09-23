@@ -75,7 +75,7 @@ HELP
   end
 
   class Cacher
-    MINIMUM_VERSION = Gem::Version.new('7.0')
+    MINIMUM_VERSION = Gem::Version.new('8.3')
     GROUP_VERSION_SEGMENTS = 2
     NEWSET_VERSION_COUNT = 2
 
@@ -146,7 +146,7 @@ HELP
         xcode.available_simulators
       end.flatten.uniq do |xcode|
         xcode.source
-      end.sort { |a, b| a.version <=> b.version }
+      end.sort { |a, b| a.name <=> b.name }
     end
   end
 end
