@@ -89,11 +89,11 @@ HELP
     end
 
     def xcodes
-      @xcodes ||= filtered_xcodes
+      @xcodes ||= get_all_xcodes
     end
 
     def newest_xcodes
-      @newest_xcodes || newest_seedlist
+      @newest_xcodes || get_newest_xcodes
     end
 
     def xcode_urls
@@ -123,12 +123,13 @@ HELP
     end
 
     private
-    def filtered_xcodes
-      installer.fetch_seedlist.select { |x| x.version >= MINIMUM_VERSION }.sort { |a, b| b.version <=> a.version }
+    def get_all_xcodes
+      installer.fetch_seedlist.sort { |a, b| b.version <=> a.version }
     end
 
-    def newest_seedlist
-      xcodes = self.xcodes
+    def get_newest_xcodes
+      # Filter only newset xcodes
+      xcodes = self.xcodes.select { |x| x.version >= MINIMUM_VERSION }
 
       # Group by a version numbers
       grouped = xcodes.group_by { |x| x.version.to_s.split('.').push('0').slice(0..GROUP_VERSION_SEGMENTS-1).join('.') }
