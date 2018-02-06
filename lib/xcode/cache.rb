@@ -5,7 +5,48 @@ require 'xcode/install'
 
 module XcodeCache
 
+  module Downloader
+
+    def self.downloader(support_cookies)
+      if support_cookies
+        return Curl
+      else
+        if File.exist?("/usr/local/opt/curl/bin/curl")
+          return Curl
+        elsif File.exist?("/usr/local/bin/wget")
+          return Wget
+        else
+          return Curl
+        end
+      end
+    end
+  end
+
+  class Wget
+    def fetch(url, output: "/dev/null", cookie: nil, retries: 5, wget_retries: 3)
+      command = [
+        "wget",
+        "--tries", "#{retries}",
+        "--continue",
+        "--quiet",
+        "--show-progress",
+        "--output-document", output,
+        url
+      ].map(&:to_s)
+
+      wget_retries.times do
+        io = IO.popen(command)
+        io.each { |line| puts line }
+        io.close
+
+        exit_code = $?.exitstatus
+        return exit_code.zero?
+      end
+    end
+  end
+
   class Curl
+
     COOKIES_PATH = Pathname.new('/tmp/xcode-links-cookies.txt')
 
     def fetch(url, output: "/dev/null", cookie: nil, retries: 5, curl_retries: 3)
@@ -13,12 +54,14 @@ module XcodeCache
       # curl --cookie $(cat /tmp/xcode-links-cookies.txt) --cookie-jar /tmp/xcode-links-cookies.txt https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_7.1.1/Xcode_7.1.1.dmg -O /dev/null -L --progress-bar
       # File.open(COOKIES_PATH, "w") { |file| file.write(spaceship.cookie) }
 
+      curl_path = File.exist?("/usr/local/opt/curl/bin/curl") ? "/usr/local/opt/curl/bin/curl" : "curl"
+
       options = [
         "--location",
       ]
       retry_options = ['--retry', "#{retries}"]
       command = [
-        "curl",
+        curl_path,
         *options,
         *retry_options,
         '--continue-at', '-',
@@ -103,7 +146,7 @@ HELP
     def fetch_xcodes
       newest_xcodes.each do |xcode|
         puts "Xcode #{xcode.version}"
-        Curl.new.fetch(xcode.url, cookie: installer.spaceship.cookie)
+        Downloader::downloader(true).new.fetch(xcode.url, cookie: installer.spaceship.cookie)
       end
     end
 
@@ -118,7 +161,7 @@ HELP
     def fetch_simulators
       simulators.each do |simulator|
         puts "#{simulator.name}"
-        Curl.new.fetch(simulator.source)
+        Downloader::downloader(false).new.fetch(simulator.source)
       end
     end
 
