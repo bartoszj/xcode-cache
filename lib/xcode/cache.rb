@@ -118,7 +118,7 @@ HELP
   end
 
   class Cacher
-    MINIMUM_VERSION = Gem::Version.new('8.3')
+    MINIMUM_VERSION = Gem::Version.new('9.4')
     GROUP_VERSION_SEGMENTS = 2
     NEWSET_VERSION_COUNT = 2
 
