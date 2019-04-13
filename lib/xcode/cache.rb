@@ -118,7 +118,10 @@ HELP
   end
 
   class Cacher
-    MINIMUM_VERSION = Gem::Version.new('9.4')
+    XCODE_MINIMUM_VERSION = Gem::Version.new('9.4')
+    XCODE_MINIMUM_IOS_VERSION = Gem::Version.new('10.2')
+    XCODE_MINIMUM_TVOS_VERSION = Gem::Version.new('10.2')
+    XCODE_MINIMUM_WATCHOS_VERSION = Gem::Version.new('4.2')
     GROUP_VERSION_SEGMENTS = 2
     NEWSET_VERSION_COUNT = 2
 
@@ -172,7 +175,7 @@ HELP
 
     def get_newest_xcodes
       # Filter only newset xcodes
-      xcodes = self.xcodes.select { |x| x.version >= MINIMUM_VERSION }
+      xcodes = self.xcodes.select { |x| x.version >= XCODE_MINIMUM_VERSION }
 
       # Group by a version numbers
       grouped = xcodes.group_by { |x| x.version.to_s.split('.').push('0').slice(0..GROUP_VERSION_SEGMENTS-1).join('.') }
@@ -188,8 +191,18 @@ HELP
     def get_simulators
       installer.installed_versions.map do |xcode|
         xcode.available_simulators
-      end.flatten.uniq do |xcode|
-        xcode.source
+      end.flatten.select do |simulator|
+        name = simulator.name.split(' ')[0]
+        case name
+        when "iOS"
+          simulator.version >= XCODE_MINIMUM_IOS_VERSION
+        when "tvOS"
+          simulator.version >= XCODE_MINIMUM_TVOS_VERSION
+        when "watchOS"
+          simulator.version >= XCODE_MINIMUM_WATCHOS_VERSION
+        end
+      end.uniq do |simulator|
+        simulator.source
       end.sort { |a, b| [a.name.split(' ')[0], b.version] <=> [b.name.split(' ')[0], a.version] }
     end
   end
