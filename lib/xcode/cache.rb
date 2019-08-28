@@ -118,7 +118,7 @@ HELP
   end
 
   class Cacher
-    XCODE_MINIMUM_VERSION = Gem::Version.new('9.4')
+    XCODE_MINIMUM_VERSION = Gem::Version.new('10.0')
     XCODE_MINIMUM_IOS_VERSION = Gem::Version.new('10.2')
     XCODE_MINIMUM_TVOS_VERSION = Gem::Version.new('10.2')
     XCODE_MINIMUM_WATCHOS_VERSION = Gem::Version.new('4.2')
